@@ -76,6 +76,9 @@ public class GetCommand implements Callable<Integer> {
         description = "Extract and output a JsonPath from the response")
     String jsonPath;
 
+    @Option(names = "--toml-path", description = "Extract and output a TOMLPath from the response")
+    String tomlPath;
+
     @Option(names = "--json-value-when-missing",
         defaultValue = "null", description = "Defines the value that is output when the requested JSON path does not exist."
         + " An empty value results in a non-zero exit code.")
@@ -185,7 +188,23 @@ public class GetCommand implements Callable<Integer> {
                         stdout, jsonPath,
                         jsonValueWhenMissing != null && !jsonValueWhenMissing.isEmpty() ?
                             jsonValueWhenMissing : null
-                    ));
+                        ));
+            } else if (tomlPath != null) {
+                validateSingleUri();
+
+                final String tomlMimeType = ContentType.DEFAULT_TEXT.getMimeType();
+                if (acceptContentTypes == null) {
+                    acceptContentTypes = Collections.singletonList(tomlMimeType);
+                } else if (!acceptContentTypes.contains(tomlMimeType)) {
+                    acceptContentTypes = new ArrayList<>(acceptContentTypes);
+                    acceptContentTypes.add(tomlMimeType);
+                }
+
+                processSingleUri(uris.get(0), client,
+                        null, new TomlPathOutputHandler(
+                                stdout, tomlPath,
+                                jsonValueWhenMissing != null && !jsonValueWhenMissing.isEmpty() ? jsonValueWhenMissing
+                                        : null));
             } else if (outputFile == null) {
                 validateSingleUri();
                 processSingleUri(uris.get(0), client, null, new PrintWriterHandler(stdout));
